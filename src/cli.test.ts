@@ -152,6 +152,35 @@ describe("sandcastle CLI", () => {
     }
   });
 
+  it("--help shows apple-containers namespace", async () => {
+    const { stdout } = await runCli("--help", process.cwd());
+    expect(stdout).toContain("apple-containers");
+  });
+
+  it("apple-containers --help shows build-image and remove-image subcommands", async () => {
+    const { stdout } = await runCli("apple-containers --help", process.cwd());
+    expect(stdout).toContain("build-image");
+    expect(stdout).toContain("remove-image");
+  });
+
+  it("apple-containers build-image --help shows --image-name flag", async () => {
+    const { stdout } = await runCli(
+      "apple-containers build-image --help",
+      process.cwd(),
+    );
+    expect(stdout).toContain("--image-name");
+  });
+
+  it("--help shows github-codespaces namespace", async () => {
+    const { stdout } = await runCli("--help", process.cwd());
+    expect(stdout).toContain("github-codespaces");
+  });
+
+  it("github-codespaces --help shows verify subcommand", async () => {
+    const { stdout } = await runCli("github-codespaces --help", process.cwd());
+    expect(stdout).toContain("verify");
+  });
+
   it("init --agent nonexistent produces error listing available agents", async () => {
     const hostDir = await mkdtemp(join(tmpdir(), "cli-host-"));
     await initRepo(hostDir);
@@ -165,5 +194,94 @@ describe("sandcastle CLI", () => {
       expect(output).toContain("nonexistent");
       expect(output).toContain("claude-code");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// apple-containers integration
+// ---------------------------------------------------------------------------
+
+describe("apple-containers integration", () => {
+  it("--help shows apple-containers build-image and remove-image in subcommand listing", async () => {
+    const { stdout } = await runCli("--help", process.cwd());
+    expect(stdout).toContain("apple-containers build-image");
+    expect(stdout).toContain("apple-containers remove-image");
+  });
+
+  it("apple-containers build-image --help shows --dockerfile flag", async () => {
+    const { stdout } = await runCli(
+      "apple-containers build-image --help",
+      process.cwd(),
+    );
+    expect(stdout).toContain("--dockerfile");
+  });
+
+  it("apple-containers remove-image --help shows --image-name flag", async () => {
+    const { stdout } = await runCli(
+      "apple-containers remove-image --help",
+      process.cwd(),
+    );
+    expect(stdout).toContain("--image-name");
+  });
+
+  it("apple-containers command is distinct from docker and podman namespaces", async () => {
+    const { stdout } = await runCli("--help", process.cwd());
+    // All three provider namespaces must coexist at the top level
+    expect(stdout).toContain("apple-containers");
+    expect(stdout).toContain("docker");
+    expect(stdout).toContain("podman");
+  });
+
+  it("apple-containers build-image --help shows --image-name flag", async () => {
+    const { stdout } = await runCli(
+      "apple-containers build-image --help",
+      process.cwd(),
+    );
+    expect(stdout).toContain("--image-name");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// github-codespaces integration
+// ---------------------------------------------------------------------------
+
+describe("github-codespaces integration", () => {
+  it("--help shows github-codespaces namespace at top level", async () => {
+    const { stdout } = await runCli("--help", process.cwd());
+    expect(stdout).toContain("github-codespaces");
+  });
+
+  it("github-codespaces --help shows verify subcommand", async () => {
+    const { stdout } = await runCli("github-codespaces --help", process.cwd());
+    expect(stdout).toContain("verify");
+  });
+
+  it("github-codespaces verify --help parses without error", async () => {
+    const { stdout } = await runCli(
+      "github-codespaces verify --help",
+      process.cwd(),
+    );
+    // --help should print usage text and exit 0
+    expect(stdout).toBeTruthy();
+  });
+
+  it("github-codespaces --help does NOT expose build-image subcommand", async () => {
+    const { stdout } = await runCli("github-codespaces --help", process.cwd());
+    expect(stdout).not.toContain("build-image");
+  });
+
+  it("github-codespaces --help does NOT expose remove-image subcommand", async () => {
+    const { stdout } = await runCli("github-codespaces --help", process.cwd());
+    expect(stdout).not.toContain("remove-image");
+  });
+
+  it("top-level --help does NOT conflate github-codespaces verify with docker build-image", async () => {
+    const { stdout } = await runCli("--help", process.cwd());
+    // docker and podman expose build-image; github-codespaces must not add a
+    // build-image entry at the top level
+    expect(stdout).toContain("docker build-image");
+    expect(stdout).toContain("podman build-image");
+    // Verify there is no "github-codespaces build-image" in the top-level output
+    expect(stdout).not.toContain("github-codespaces build-image");
   });
 });

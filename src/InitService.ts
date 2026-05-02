@@ -318,6 +318,18 @@ const SANDBOX_PROVIDER_REGISTRY: SandboxProviderEntry[] = [
     containerfileName: "Containerfile",
     cliNamespace: "podman",
   },
+  {
+    name: "apple-containers",
+    label: "Apple Containers",
+    containerfileName: "Dockerfile",
+    cliNamespace: "apple-containers",
+  },
+  {
+    name: "github-codespaces",
+    label: "GitHub Codespaces",
+    containerfileName: "Dockerfile",
+    cliNamespace: "github-codespaces",
+  },
 ];
 
 export const listSandboxProviders = (): SandboxProviderEntry[] =>

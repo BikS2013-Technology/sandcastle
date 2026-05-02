@@ -1944,3 +1944,154 @@ describe("Sandbox provider registry", () => {
     expect(getSandboxProvider("nonexistent")).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// apple-containers integration
+// ---------------------------------------------------------------------------
+
+describe("apple-containers integration", () => {
+  it("listSandboxProviders includes apple-containers", () => {
+    const providers = listSandboxProviders();
+    expect(providers.some((p) => p.name === "apple-containers")).toBe(true);
+  });
+
+  it("getSandboxProvider returns apple-containers entry with correct name", () => {
+    const provider = getSandboxProvider("apple-containers");
+    expect(provider).toBeDefined();
+    expect(provider!.name).toBe("apple-containers");
+  });
+
+  it("getSandboxProvider returns apple-containers entry with cliNamespace 'apple-containers'", () => {
+    const provider = getSandboxProvider("apple-containers");
+    expect(provider).toBeDefined();
+    expect(provider!.cliNamespace).toBe("apple-containers");
+  });
+
+  it("getSandboxProvider returns apple-containers entry with label 'Apple Containers'", () => {
+    const provider = getSandboxProvider("apple-containers");
+    expect(provider).toBeDefined();
+    expect(provider!.label).toBe("Apple Containers");
+  });
+
+  it("getSandboxProvider returns apple-containers entry with containerfileName 'Dockerfile'", () => {
+    const provider = getSandboxProvider("apple-containers");
+    expect(provider).toBeDefined();
+    expect(provider!.containerfileName).toBe("Dockerfile");
+  });
+
+  it("apple-containers cliNamespace does not collide with docker, podman, or github-codespaces", () => {
+    const provider = getSandboxProvider("apple-containers");
+    expect(provider).toBeDefined();
+    expect(provider!.cliNamespace).not.toBe("docker");
+    expect(provider!.cliNamespace).not.toBe("podman");
+    expect(provider!.cliNamespace).not.toBe("github-codespaces");
+  });
+
+  it("scaffold with apple-containers provider writes Dockerfile to .sandcastle/", async () => {
+    const dir = await makeDir();
+    const appleContainersProvider = getSandboxProvider("apple-containers")!;
+    await runScaffold(dir, { sandboxProvider: appleContainersProvider });
+
+    const { readFile } = await import("node:fs/promises");
+    const dockerfile = await readFile(
+      join(dir, ".sandcastle", "Dockerfile"),
+      "utf-8",
+    );
+    expect(dockerfile).toContain("FROM");
+  });
+
+  it("apple-containers SandboxProviderEntry has all required fields defined", () => {
+    const provider = getSandboxProvider("apple-containers");
+    expect(provider).toBeDefined();
+    expect(typeof provider!.name).toBe("string");
+    expect(provider!.name.length).toBeGreaterThan(0);
+    expect(typeof provider!.label).toBe("string");
+    expect(provider!.label.length).toBeGreaterThan(0);
+    expect(typeof provider!.containerfileName).toBe("string");
+    expect(provider!.containerfileName.length).toBeGreaterThan(0);
+    expect(typeof provider!.cliNamespace).toBe("string");
+    expect(provider!.cliNamespace.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// github-codespaces integration
+// ---------------------------------------------------------------------------
+
+describe("github-codespaces integration", () => {
+  it("listSandboxProviders includes github-codespaces", () => {
+    const providers = listSandboxProviders();
+    expect(providers.some((p) => p.name === "github-codespaces")).toBe(true);
+  });
+
+  it("getSandboxProvider returns github-codespaces entry with correct name", () => {
+    const provider = getSandboxProvider("github-codespaces");
+    expect(provider).toBeDefined();
+    expect(provider!.name).toBe("github-codespaces");
+  });
+
+  it("getSandboxProvider returns github-codespaces entry with cliNamespace 'github-codespaces'", () => {
+    const provider = getSandboxProvider("github-codespaces");
+    expect(provider).toBeDefined();
+    expect(provider!.cliNamespace).toBe("github-codespaces");
+  });
+
+  it("getSandboxProvider returns github-codespaces entry with label 'GitHub Codespaces'", () => {
+    const provider = getSandboxProvider("github-codespaces");
+    expect(provider).toBeDefined();
+    expect(provider!.label).toBe("GitHub Codespaces");
+  });
+
+  it("getSandboxProvider returns github-codespaces entry with containerfileName 'Dockerfile'", () => {
+    // github-codespaces uses a Dockerfile in the scaffold (matches docker provider)
+    const provider = getSandboxProvider("github-codespaces");
+    expect(provider).toBeDefined();
+    expect(provider!.containerfileName).toBe("Dockerfile");
+  });
+
+  it("github-codespaces is NOT listed with cliNamespace that belongs to docker", () => {
+    const provider = getSandboxProvider("github-codespaces");
+    expect(provider).toBeDefined();
+    expect(provider!.cliNamespace).not.toBe("docker");
+    expect(provider!.cliNamespace).not.toBe("podman");
+    expect(provider!.cliNamespace).not.toBe("apple-containers");
+  });
+
+  it("scaffold with github-codespaces provider writes Dockerfile to .sandcastle/", async () => {
+    const dir = await makeDir();
+    const githubCodespacesProvider = getSandboxProvider("github-codespaces")!;
+    await runScaffold(dir, { sandboxProvider: githubCodespacesProvider });
+
+    const { readFile } = await import("node:fs/promises");
+    const dockerfile = await readFile(
+      join(dir, ".sandcastle", "Dockerfile"),
+      "utf-8",
+    );
+    expect(dockerfile).toContain("FROM");
+  });
+
+  it("scaffold with github-codespaces provider does NOT write Containerfile", async () => {
+    const dir = await makeDir();
+    const githubCodespacesProvider = getSandboxProvider("github-codespaces")!;
+    await runScaffold(dir, { sandboxProvider: githubCodespacesProvider });
+
+    const { access } = await import("node:fs/promises");
+    await expect(
+      access(join(dir, ".sandcastle", "Containerfile")),
+    ).rejects.toThrow();
+  });
+
+  it("github-codespaces SandboxProviderEntry has all required fields defined", () => {
+    const provider = getSandboxProvider("github-codespaces");
+    expect(provider).toBeDefined();
+    // All four fields on SandboxProviderEntry must be present and non-empty strings
+    expect(typeof provider!.name).toBe("string");
+    expect(provider!.name.length).toBeGreaterThan(0);
+    expect(typeof provider!.label).toBe("string");
+    expect(provider!.label.length).toBeGreaterThan(0);
+    expect(typeof provider!.containerfileName).toBe("string");
+    expect(provider!.containerfileName.length).toBeGreaterThan(0);
+    expect(typeof provider!.cliNamespace).toBe("string");
+    expect(provider!.cliNamespace.length).toBeGreaterThan(0);
+  });
+});

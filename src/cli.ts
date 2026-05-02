@@ -25,6 +25,12 @@ import {
   getNextStepsLines,
 } from "./InitService.js";
 import { defaultImageName } from "./sandboxes/docker.js";
+import {
+  buildImageCommand as appleContainersBuildImageCommand,
+  removeImageCommand as appleContainersRemoveImageCommand,
+  buildImage as appleContainersBuildImage,
+} from "./sandboxes/apple-containers.js";
+import { verifyCommand as githubCodespacesVerifyCommand } from "./sandboxes/github-codespaces.js";
 import type {
   AgentEntry,
   BacklogManagerEntry,
@@ -277,32 +283,48 @@ const initCommand = Command.make(
 
       // Prompt user before building image
       const providerLabel = selectedSandboxProvider.label;
-      const shouldBuild = yield* Effect.promise(() =>
-        clack.confirm({
-          message: `Build the default ${providerLabel} image now?`,
-          initialValue: true,
-        }),
-      );
 
-      if (shouldBuild === true) {
-        const containerfileDir = join(cwd, CONFIG_DIR);
-        if (selectedSandboxProvider.name === "podman") {
-          yield* d.spinner(
-            `Building ${providerLabel} image '${imageName}'...`,
-            podmanBuildImage(imageName, containerfileDir),
-          );
-        } else {
-          yield* d.spinner(
-            `Building ${providerLabel} image '${imageName}'...`,
-            buildImage(imageName, containerfileDir),
-          );
-        }
-        yield* d.status("Init complete! Image built successfully.", "success");
-      } else {
+      if (selectedSandboxProvider.name === "github-codespaces") {
         yield* d.status(
-          `Init complete! Run \`sandcastle ${selectedSandboxProvider.cliNamespace} build-image\` to build the ${providerLabel} image later.`,
+          `Init complete! GitHub Codespaces builds images server-side from the repo's devcontainer config — no local image build is needed.`,
           "success",
         );
+      } else {
+        const shouldBuild = yield* Effect.promise(() =>
+          clack.confirm({
+            message: `Build the default ${providerLabel} image now?`,
+            initialValue: true,
+          }),
+        );
+
+        if (shouldBuild === true) {
+          const containerfileDir = join(cwd, CONFIG_DIR);
+          if (selectedSandboxProvider.name === "podman") {
+            yield* d.spinner(
+              `Building ${providerLabel} image '${imageName}'...`,
+              podmanBuildImage(imageName, containerfileDir),
+            );
+          } else if (selectedSandboxProvider.name === "apple-containers") {
+            yield* d.spinner(
+              `Building ${providerLabel} image '${imageName}'...`,
+              appleContainersBuildImage(imageName, containerfileDir),
+            );
+          } else {
+            yield* d.spinner(
+              `Building ${providerLabel} image '${imageName}'...`,
+              buildImage(imageName, containerfileDir),
+            );
+          }
+          yield* d.status(
+            "Init complete! Image built successfully.",
+            "success",
+          );
+        } else {
+          yield* d.status(
+            `Init complete! Run \`sandcastle ${selectedSandboxProvider.cliNamespace} build-image\` to build the ${providerLabel} image later.`,
+            "success",
+          );
+        }
       }
 
       // Show template-specific next steps
@@ -460,6 +482,35 @@ const podmanCommand = Command.make("podman", {}, () =>
   Command.withSubcommands([podmanBuildImageCommand, podmanRemoveImageCommand]),
 );
 
+// --- Apple Containers namespace command ---
+
+const appleContainersCommand = Command.make("apple-containers", {}, () =>
+  Effect.gen(function* () {
+    const d = yield* Display;
+    yield* d.status(
+      "Apple Containers sandbox commands. Use --help to see available subcommands.",
+      "info",
+    );
+  }),
+).pipe(
+  Command.withSubcommands([
+    appleContainersBuildImageCommand,
+    appleContainersRemoveImageCommand,
+  ]),
+);
+
+// --- GitHub Codespaces namespace command ---
+
+const githubCodespacesCommand = Command.make("github-codespaces", {}, () =>
+  Effect.gen(function* () {
+    const d = yield* Display;
+    yield* d.status(
+      "GitHub Codespaces sandbox commands. Use --help to see available subcommands.",
+      "info",
+    );
+  }),
+).pipe(Command.withSubcommands([githubCodespacesVerifyCommand]));
+
 // --- Root command ---
 
 const rootCommand = Command.make("sandcastle", {}, () =>
@@ -471,7 +522,13 @@ const rootCommand = Command.make("sandcastle", {}, () =>
 );
 
 export const sandcastle = rootCommand.pipe(
-  Command.withSubcommands([initCommand, dockerCommand, podmanCommand]),
+  Command.withSubcommands([
+    initCommand,
+    dockerCommand,
+    podmanCommand,
+    appleContainersCommand,
+    githubCodespacesCommand,
+  ]),
 );
 
 export const cli = Command.run(sandcastle, {

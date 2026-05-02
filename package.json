@@ -26,6 +26,14 @@
       "import": "./dist/sandboxes/daytona.js",
       "types": "./dist/sandboxes/daytona.d.ts"
     },
+    "./sandboxes/apple-containers": {
+      "import": "./dist/sandboxes/apple-containers.js",
+      "types": "./dist/sandboxes/apple-containers.d.ts"
+    },
+    "./sandboxes/github-codespaces": {
+      "import": "./dist/sandboxes/github-codespaces.js",
+      "types": "./dist/sandboxes/github-codespaces.d.ts"
+    },
     "./sandboxes/no-sandbox": {
       "import": "./dist/sandboxes/no-sandbox.js",
       "types": "./dist/sandboxes/no-sandbox.d.ts"
