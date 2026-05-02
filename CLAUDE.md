@@ -65,6 +65,82 @@ For user-facing changes, add a changeset to `.changeset`. Check all changesets t
 
 When changing public-facing behavior, check `README.md` to see if the documentation needs updating.
 
+## Installation source — MANDATORY
+
+**`@ai-hero/sandcastle` MUST always be installed from the BikS2013-Technology fork, `biks-branch`. NEVER install it from npm, from `mattpocock/sandcastle`, or from any other branch or fork.**
+
+Canonical source: https://github.com/BikS2013-Technology/sandcastle/tree/biks-branch
+
+This fork carries internal patches (notably the `apple-containers` and `github-codespaces` sandbox providers) that are not present in the upstream npm release or in the upstream `main` branch. Pulling sandcastle from anywhere else will silently lose those providers and any other internal customisation.
+
+### Required install commands
+
+For consumers (other projects that depend on sandcastle):
+
+```bash
+# Pin to the branch tip
+npm install --save-dev "BikS2013-Technology/sandcastle#biks-branch"
+
+# Or, if installing via SSH from a machine with org access:
+npm install --save-dev "git+ssh://git@github.com/BikS2013-Technology/sandcastle.git#biks-branch"
+
+# Or, pin to a specific commit on biks-branch (preferred for reproducibility):
+npm install --save-dev "BikS2013-Technology/sandcastle#<commit-sha>"
+```
+
+### Forbidden install commands (never use these)
+
+```bash
+# ❌ Public npm — does NOT contain the apple-containers or github-codespaces providers
+npm install --save-dev @ai-hero/sandcastle
+
+# ❌ Upstream repo — does NOT contain BikS2013-Technology patches
+npm install --save-dev "mattpocock/sandcastle"
+npm install --save-dev "mattpocock/sandcastle#main"
+
+# ❌ Any branch other than biks-branch on the BikS2013-Technology fork
+npm install --save-dev "BikS2013-Technology/sandcastle#main"
+```
+
+### Build note for git-based installs
+
+Because this fork's `package.json` does not run `tsgo build` in its `prepare` script, an `npm install` from git pulls source only — no `dist/`. Consumers must either:
+
+1. Install from a `npm pack` tarball produced after `npm run build`, OR
+2. Use `npm link` against a locally built checkout, OR
+3. Patch the fork's `prepare` script to also build (one-line change, then re-push to `biks-branch`).
+
+Verify a successful install by importing one of the fork-only providers — if the import resolves and the factory is a function, the install is correct:
+
+```bash
+node --input-type=module -e "import {appleContainers} from '@ai-hero/sandcastle/sandboxes/apple-containers'; console.log(typeof appleContainers)"
+# Expected output: function
+```
+
+If this fails or prints `undefined`, sandcastle was installed from the wrong source — uninstall and reinstall from the BikS2013-Technology biks-branch.
+
+## How to use sandcastle
+
+The full **Sandcastle Usage Guide** lives at [`docs/usage/sandcastle-usage-guide.md`](./docs/usage/sandcastle-usage-guide.md).
+
+Always consult that document when answering "how do I install / configure / run sandcastle in a consumer project". It is the canonical reference and covers:
+
+- Mandatory install source (this fork, `biks-branch`) and forbidden alternatives
+- Build caveat for git-based installs (no `dist/` from plain `npm install`) and the three workarounds (`npm pack`, `npm link`, `prepare` patch)
+- A verification one-liner that fails fast if the wrong source was used
+- `sandcastle init` flow and `.sandcastle/` directory layout
+- Per-provider selection guide (docker, podman, apple-containers, vercel, daytona, github-codespaces, no-sandbox) with prerequisites and supported branch strategies
+- Programmatic API (`run()`, `interactive()`, `createSandbox()`, `createWorktree()`) with minimum-viable examples
+- Apple-containers and github-codespaces deep-dives (modes, defaults, constraints) — these providers exist only in this fork
+- Prompt modes (inline, template file, built-in arguments) and prompt argument substitution rules
+- Hooks lifecycle ordering
+- Logging modes (log-to-file vs terminal) and the `onAgentStreamEvent` forwarder
+- Workflow recipes (single issue, plan→implement→review, parallel Codespaces, mac-native)
+- Troubleshooting matrix
+- Versioning rule for pre-1.0 patch changesets
+
+When the user asks anything about consuming sandcastle, read `docs/usage/sandcastle-usage-guide.md` first and base your answer on it instead of guessing from the README or older snippets.
+
 ## Agent skills
 
 ### Issue tracker
